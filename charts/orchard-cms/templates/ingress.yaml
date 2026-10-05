@@ -30,10 +30,16 @@ spec:
 {{- end }}
   rules:
   {{- range .Values.ingress.hosts }}
-    - host: {{ . | quote }}
+  {{- $host := . }}
+  {{- $path := "/" }}
+  {{- if kindIs "map" . }}
+  {{- $host = .host }}
+  {{- $path = .path | default "/" }}
+  {{- end }}
+    - host: {{ $host | quote }}
       http:
         paths:
-          - path: /
+          - path: {{ $path }}
             pathType: {{ $.Values.ingress.pathType | default "ImplementationSpecific" }}
             backend:
               service:
