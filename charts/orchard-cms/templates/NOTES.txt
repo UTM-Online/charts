@@ -1,5 +1,5 @@
 {{- if .Values.ingress.enabled }}
 {{- range .Values.ingress.hosts }}
-  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ . }}{{ $.Values.ingress.path }}
+http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}{{ $.Values.ingress.path }}
 {{- end }}
 {{- end }}
