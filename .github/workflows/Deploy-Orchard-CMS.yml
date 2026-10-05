@@ -52,11 +52,11 @@ jobs:
       id: chart-file
       run: |
         # Find the most recent chart file (note: UTMO-Service uses capital letters)
-        chart_file=$(ls -t ../UTMO-Service-*.tgz 2>/dev/null | head -n1)
+        chart_file=$(ls -t ../Orchard-CMS-*.tgz 2>/dev/null | head -n1)
         
         # If not found with capital letters, try lowercase
         if [ -z "$chart_file" ]; then
-          chart_file=$(ls -t ../utmo-service-*.tgz 2>/dev/null | head -n1)
+          chart_file=$(ls -t ../orchard-cms-*.tgz 2>/dev/null | head -n1)
         fi
         
         if [ -n "$chart_file" ]; then
@@ -99,5 +99,5 @@ jobs:
       if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
       uses: stefanzweifel/git-auto-commit-action@v5
       with:
-        commit_message: "chore(utmo-service): bump chart version to ${{ steps.version.outputs.new_version }}"
-        file_pattern: "1st Party/utmo-service/Chart.yaml"
+        commit_message: "chore(orchard-cms): bump chart version to ${{ steps.version.outputs.new_version }}"
+        file_pattern: "charts/orchard-cms/Chart.yaml"
