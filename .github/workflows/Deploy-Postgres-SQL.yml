@@ -1,0 +1,103 @@
+name: Deploy PostgreSQL Chart
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'charts/postgresql/**' ]
+  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+    paths: [ 'charts/postgresql/**' ]
+
+env:
+  MajorVersion: 1
+  MinorVersion: 1
+
+jobs:
+  deploy-chart:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 'charts/postgresql'
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Install Helm
+      uses: azure/setup-helm@v4
+      with:
+        version: '3.14.0'
+        
+    - name: Set chart version
+      id: version
+      run: |
+        # Construct version from env vars and run number
+        new_version="${{ env.MajorVersion }}.${{ env.MinorVersion }}.${{ github.run_number }}"
+        
+        echo "New version: $new_version"
+        echo "new_version=$new_version" >> $GITHUB_OUTPUT
+        
+        # Update Chart.yaml with new version
+        sed -i "s/^version: \".*\"/version: \"$new_version\"/" Chart.yaml
+        
+        echo "Set chart version to $new_version"
+        
+    - name: Package Helm chart
+      run: |
+        echo "Packaging chart..."
+        helm package . --destination ../
+        
+    - name: Find chart file
+      id: chart-file
+      run: |
+        # Find the most recent chart file (note: UTMO-Service uses capital letters)
+        chart_file=$(ls -t ../postgresql-*.tgz 2>/dev/null | head -n1)
+        
+        # If not found with capital letters, try lowercase
+        if [ -z "$chart_file" ]; then
+          chart_file=$(ls -t ../postgresql-*.tgz 2>/dev/null | head -n1)
+        fi
+        
+        if [ -n "$chart_file" ]; then
+          chart_filename=$(basename "$chart_file")
+          echo "Found chart file: $chart_file"
+          echo "chart_path=$chart_file" >> $GITHUB_OUTPUT
+          echo "chart_filename=$chart_filename" >> $GITHUB_OUTPUT
+        else
+          echo "No chart file found"
+          exit 1
+        fi
+        
+    - name: Publish to Helm repository
+      if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      run: |
+        echo "Publishing to helm repository..."
+        
+        # Create base64 encoded auth header
+        auth_string="${{ secrets.HELM_REPO_USERNAME }}:${{ secrets.HELM_REPO_PASSWORD }}"
+        auth_header="Authorization: Basic $(echo -n "$auth_string" | base64 -w 0)"
+        
+        # Upload chart to repository
+        curl -X PUT \
+          -H "$auth_header" \
+          -H "Content-Type: application/gzip" \
+          --data-binary @"${{ steps.chart-file.outputs.chart_path }}" \
+          https://packages.public.utmonline.net/helm/helm-charts
+          
+        echo "Successfully published chart ${{ steps.chart-file.outputs.chart_filename }}"
+        
+    - name: Clean up chart file
+      if: always()
+      run: |
+        if [ -f "${{ steps.chart-file.outputs.chart_path }}" ]; then
+          rm "${{ steps.chart-file.outputs.chart_path }}"
+          echo "Cleaned up local chart file"
+        fi
+        
+    - name: Commit version bump
+      if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_message: "chore(postgresql): bump chart version to ${{ steps.version.outputs.new_version }}"
+        file_pattern: "charts/postgresql/Chart.yaml"

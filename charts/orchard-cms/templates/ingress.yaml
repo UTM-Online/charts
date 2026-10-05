@@ -33,7 +33,8 @@ spec:
     - host: {{ . | quote }}
       http:
         paths:
-          - pathType: {{ .Values.ingress.pathType }} 
+          - path: /
+            pathType: {{ $.Values.ingress.pathType | default "ImplementationSpecific" }}
             backend:
               service:
                 name: {{ $fullName }}
