@@ -32,6 +32,31 @@ Create chart name and version as used by the chart label.
 {{- end -}}
 
 {{/*
+Return the fully qualified container image reference.
+If the repository already includes a registry host, keep it as-is.
+Otherwise, append the configured registry (global.imageRegistry or image.registry).
+*/}}
+{{- define "orchard-cms.image" -}}
+{{- $registry := .Values.image.registry | default .Values.global.imageRegistry | default "" -}}
+{{- $repository := .Values.image.repository -}}
+{{- $repositoryHasRegistry := false -}}
+{{- if $repository -}}
+{{- $parts := splitList "/" $repository -}}
+{{- if gt (len $parts) 1 -}}
+{{- $firstPart := index $parts 0 -}}
+{{- if or (contains "." $firstPart) (contains ":" $firstPart) (eq $firstPart "localhost") -}}
+{{- $repositoryHasRegistry = true -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- if and $registry (not $repositoryHasRegistry) -}}
+{{- printf "%s/%s" $registry $repository -}}
+{{- else -}}
+{{- printf "%s" $repository -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Return the proper Docker Image Registry Secret Names
 */}}
 {{- define "orchard-cms.imagePullSecrets" -}}

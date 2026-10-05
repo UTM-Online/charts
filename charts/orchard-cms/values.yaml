@@ -1,4 +1,5 @@
 global:
+  imageRegistry: ""
   postgresql:
     postgresqlUsername: postgres
     postgresqlDatabase: secretpw
@@ -11,6 +12,7 @@ postgresql:
     tag: 11.9.0-debian-10-r48
 
 image:
+  registry: ""
   repository: orchard-cms
   tag: latest
   pullPolicy: IfNotPresent
