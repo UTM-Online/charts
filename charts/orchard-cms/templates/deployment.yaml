@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "orchard-cms.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "orchard-cms.name" . }}
+    helm.sh/chart: {{ include "orchard-cms.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app: {{ include "orchard-cms.name" . }}
+    version: {{ .Release.Name }}
+    release: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "orchard-cms.name" . }}
+      version: {{ .Release.Name }}
+  serviceName: {{ include "orchard-cms.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "orchard-cms.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app: {{ include "orchard-cms.name" . }}
+        version: {{ .Release.Name }}
+        release: {{ .Release.Name }}
+{{- with .Values.podAnnotations }}
+      annotations:
+{{ toYaml . | indent 8 }}
+{{- end }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+          {{- range $k, $v := .Values.environmentSecrets }}
+            - name: {{ $k }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "orchard-cms.fullname" $ }}-env
+                  key: {{ $k }}
+          {{- end }}
+          {{- range $k, $v := .Values.environmentVariables }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+{{- if .Values.volumeClaim.enabled }}
+          volumeMounts:
+          - mountPath: /app/App_Data
+            name: volume
+{{- end }}  
+{{- include "orchard-cms.imagePullSecrets" . | indent 6 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+{{- if .Values.volumeClaim.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: volume
+      {{- with .Values.volumeClaim.annotations }}
+        annotations:
+        {{- range $key, $value := . }}
+          {{ $key }}: {{ $value }}
+        {{- end }}
+        {{- end }}
+      spec:
+        accessModes:
+        {{- range .Values.volumeClaim.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.volumeClaim.size | quote }}
+        storageClassName: {{ .Values.volumeClaim.storageClass }}
+{{- end }}

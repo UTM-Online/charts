@@ -1,0 +1,59 @@
+global:
+  postgresql:
+    postgresqlUsername: postgres
+    postgresqlDatabase: secretpw
+
+replicaCount: 1
+
+postgresql:
+  enabled: true
+  image:
+    tag: 11.9.0-debian-10-r48
+
+image:
+  repository: orchard-cms
+  tag: latest
+  pullPolicy: IfNotPresent
+
+
+nameOverride: ""
+fullnameOverride: ""
+disableMutualTls: false
+
+service:
+  type: ClusterIP
+  port: 80
+
+volumeClaim:
+  enabled: false
+  accessModes:
+    - ReadWriteOnce
+  size: 1Gi
+  storageClass: default
+
+ingress:
+  enabled: false
+  annotations: {}
+  hosts:
+    - orchard-cms.local
+  pathType: ImplementationSpecific
+  tls: []
+
+environmentVariables:
+  ASPNETCORE_ENVIRONMENT: production
+
+# environmentSecrets:
+  # ENV_VARIABLE_SECRET: "MySecretValue"
+
+resources: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Annotations for the statefulset
+podAnnotations: {
+
+}
