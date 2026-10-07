@@ -1,7 +1,7 @@
 apiVersion: v2
 description: A Helm chart for using OrchardCore cms
 name: orchard-cms
-version: 2.0.2
+version: 2.0.3
 appVersion: 1.0.0
 home: https://www.orchardcore.net/
 sources:
@@ -9,6 +9,8 @@ sources:
 maintainers:
 - name: jptissot
   email: jean-philippe.tissot@canada.ca
+- name: Josh Irwin
+  email: joshua@irwin.ws
 dependencies:
   - name: postgresql
     version: 9.8.4
