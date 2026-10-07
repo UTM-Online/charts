@@ -45,7 +45,7 @@ spec:
           {{- range $k, $v := .Values.environmentVariables }}
             - name: {{ $k }}
               {{- if kindIs "map" $v }}
-                {{- if hasKey $v "existingSecret" and $v.existingSecret and hasKey $v.existingSecret "key" and $v.key and $v.existingSecret.name and $v.existingSecret.key }}
+                {{- if and (hasKey $v "existingSecret") (kindIs "map" $v.existingSecret) (hasKey $v.existingSecret "name") (hasKey $v.existingSecret "key") $v.existingSecret.name $v.existingSecret.key }}
               valueFrom:
                 secretKeyRef:
                   name: {{ $v.existingSecret.name }}
